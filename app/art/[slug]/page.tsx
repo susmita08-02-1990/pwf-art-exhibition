@@ -31,8 +31,8 @@ export default async function ArtworkPage({
 
   if (error || !artwork) {
     return (
-      <main className="p-8">
-        <h1 className="text-2xl font-bold">
+      <main className="min-h-screen bg-[#f5f0e8] p-8">
+        <h1 className="text-2xl font-semibold">
           Artwork not found
         </h1>
 
@@ -45,7 +45,7 @@ export default async function ArtworkPage({
     )
   }
 
-  // Get likes
+  // Get like count
   const { count: likeCount } = await supabase
     .from('likes')
     .select('*', {
@@ -54,7 +54,7 @@ export default async function ArtworkPage({
     })
     .eq('artwork_id', artwork.id)
 
-  // Get all artworks for browsing
+  // Get all artworks for exhibition navigation
   const { data: allArtworks } = await supabase
     .from('artworks')
     .select('id, slug, title, display_order')
@@ -79,19 +79,24 @@ export default async function ArtworkPage({
       : null
 
   const artworkNumber =
-    currentIndex >= 0 ? currentIndex + 1 : 1
+    currentIndex >= 0
+      ? currentIndex + 1
+      : 1
 
   const totalArtworks = artworks.length
 
-  // Phone / WhatsApp
+  // Prepare phone number for WhatsApp
   const rawPhone = artwork.artists?.phone || ''
-  const digitsOnly = rawPhone.replace(/\D/g, '')
+
+  const digitsOnly =
+    rawPhone.replace(/\D/g, '')
 
   const whatsappPhone =
     digitsOnly.length === 10
       ? `91${digitsOnly}`
       : digitsOnly
 
+  // WhatsApp messages
   const buyingMessage = encodeURIComponent(
     `Hi, I saw "${artwork.title}" at the PWF Art Exhibition and I am interested in buying this artwork.`
   )
@@ -100,208 +105,398 @@ export default async function ArtworkPage({
     `Hi, I saw "${artwork.title}" at the PWF Art Exhibition and would like to discuss a custom artwork.`
   )
 
-  const isAvailable = artwork.status === 'available'
-  const isSold = artwork.status === 'sold'
-  const isNotForSale = artwork.status === 'not_for_sale'
+  // Artwork status
+  const isAvailable =
+    artwork.status === 'available'
+
+  const isSold =
+    artwork.status === 'sold'
+
+  const isNotForSale =
+    artwork.status === 'not_for_sale'
 
   return (
-    <main className="mx-auto max-w-xl p-6">
+    <main className="min-h-screen bg-[#f5f0e8] text-[#29231f]">
 
+      {/* Track artwork view */}
       <ViewTracker artworkId={artwork.id} />
 
-      {/* Exhibition navigation */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-10">
 
-        <Link
-          href="/gallery"
-          className="text-sm font-medium underline"
-        >
-          ← Gallery
-        </Link>
+        {/* ====================================== */}
+        {/* EXHIBITION IDENTITY */}
+        {/* ====================================== */}
 
-        <span className="text-sm text-gray-500">
-          Artwork {artworkNumber} of {totalArtworks}
-        </span>
+        <header className="mb-8 text-center">
+
+          {/* Community */}
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#653426] sm:text-base">
+            Pashmina Waterfront
+          </p>
+
+          {/* Exhibition title */}
+          <h2 className="mt-3 font-serif text-3xl font-semibold tracking-wide text-[#29231f] sm:text-4xl">
+            Art Exhibition
+          </h2>
+
+          {/* Elegant divider */}
+          <div className="mx-auto mt-4 flex max-w-[260px] items-center gap-3">
+
+            <span className="h-px flex-1 bg-[#b98570]" />
+
+            <span className="h-2 w-2 rotate-45 border border-[#9a5944]" />
+
+            <span className="h-px flex-1 bg-[#b98570]" />
+
+          </div>
+
+          {/* Bengali exhibition signature */}
+          <p className="mt-4 font-serif text-xl font-medium tracking-[0.08em] text-[#8d4a36] sm:text-2xl">
+            শিল্প • সৃষ্টি • উৎসব
+          </p>
+
+        </header>
+
+
+        {/* ====================================== */}
+        {/* ARTWORK CARD */}
+        {/* ====================================== */}
+
+        <article className="overflow-hidden rounded-2xl border border-[#d8c9b9] bg-[#fffdf9] shadow-sm">
+
+          {/* Top navigation */}
+          <div className="flex items-center justify-between border-b border-[#e7ddd2] px-4 py-3">
+
+            <Link
+              href="/gallery"
+              className="text-sm font-medium text-[#7d3f2d]"
+            >
+              ← Gallery
+            </Link>
+
+            <span className="text-xs tracking-wide text-[#81766c]">
+              Artwork {artworkNumber} of {totalArtworks}
+            </span>
+
+          </div>
+
+
+          {/* ====================================== */}
+          {/* PAINTING */}
+          {/* ====================================== */}
+
+          {artwork.image_url && (
+            <div className="bg-[#eee7dd] p-3 sm:p-5">
+
+              <img
+                src={artwork.image_url}
+                alt={artwork.title}
+                className="mx-auto max-h-[75vh] w-full object-contain"
+              />
+
+            </div>
+          )}
+
+
+          <div className="px-5 py-6 sm:px-8 sm:py-8">
+
+            {/* ====================================== */}
+            {/* ARTWORK INFORMATION */}
+            {/* ====================================== */}
+
+            <div className="text-center">
+
+              <h1 className="font-serif text-3xl leading-tight sm:text-4xl">
+                {artwork.title}
+              </h1>
+
+              <p className="mt-2 text-base text-[#766b62]">
+
+                by{' '}
+
+                <span className="font-medium text-[#453b34]">
+                  {artwork.artists?.name}
+                </span>
+
+              </p>
+
+              <p className="mt-3 text-sm tracking-wide text-[#81766c]">
+
+                {artwork.medium}
+
+                {artwork.size &&
+                  `  •  ${artwork.size}`}
+
+                {artwork.year &&
+                  `  •  ${artwork.year}`}
+
+              </p>
+
+            </div>
+
+
+            {/* Like */}
+            <div className="mt-5 flex justify-center">
+
+              <LikeButton
+                artworkId={artwork.id}
+                initialLikes={likeCount ?? 0}
+              />
+
+            </div>
+
+
+            {/* ====================================== */}
+            {/* STORY */}
+            {/* ====================================== */}
+
+            {artwork.story && (
+              <section className="mt-9 border-t border-[#e7ddd2] pt-7">
+
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9a5944]">
+                  Story Behind the Painting
+                </p>
+
+                <p className="mt-4 whitespace-pre-line text-[15px] leading-7 text-[#514840]">
+                  {artwork.story}
+                </p>
+
+              </section>
+            )}
+
+
+            {/* ====================================== */}
+            {/* BUYER EXPERIENCE */}
+            {/* ====================================== */}
+
+            <section className="mt-9 rounded-xl border border-[#dfd0c1] bg-[#faf6f0] p-5">
+
+              <div className="flex items-start justify-between gap-4">
+
+                {/* Status */}
+                <div>
+
+                  <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#8d4a36]">
+                    Availability
+                  </p>
+
+                  <div className="mt-3">
+
+                    {isAvailable && (
+                      <span className="inline-block rounded-full bg-[#e4eee2] px-3 py-1 text-sm font-semibold text-[#3f6741]">
+                        ● Available
+                      </span>
+                    )}
+
+                    {isSold && (
+                      <span className="inline-block rounded-full bg-[#efe1dd] px-3 py-1 text-sm font-semibold text-[#8a3f32]">
+                        Sold
+                      </span>
+                    )}
+
+                    {isNotForSale && (
+                      <span className="inline-block rounded-full bg-[#ebe7e2] px-3 py-1 text-sm font-semibold text-[#665f58]">
+                        Not for Sale
+                      </span>
+                    )}
+
+                  </div>
+
+                </div>
+
+
+                {/* Price */}
+                {artwork.for_sale &&
+                  artwork.price && (
+
+                    <div className="text-right">
+
+                      <p className="text-xs text-[#81766c]">
+                        Price
+                      </p>
+
+                      <p className="mt-1 font-serif text-2xl font-semibold text-[#653426]">
+                        ₹
+                        {Number(
+                          artwork.price
+                        ).toLocaleString(
+                          'en-IN'
+                        )}
+                      </p>
+
+                    </div>
+
+                  )}
+
+              </div>
+
+
+              {/* Interested in buying */}
+              {isAvailable &&
+                artwork.for_sale &&
+                whatsappPhone && (
+
+                  <a
+                    href={`https://wa.me/${whatsappPhone}?text=${buyingMessage}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-5 block rounded-lg bg-[#743d2c] px-5 py-3 text-center font-semibold text-white"
+                  >
+                    Interested in Buying
+                  </a>
+
+                )}
+
+
+              {/* Custom order */}
+              {artwork.accepts_custom_order &&
+                whatsappPhone && (
+
+                  <a
+                    href={`https://wa.me/${whatsappPhone}?text=${customOrderMessage}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 block rounded-lg border border-[#743d2c] px-5 py-3 text-center font-semibold text-[#743d2c]"
+                  >
+                    Request a Custom Order
+                  </a>
+
+                )}
+
+
+              {/* Commission note */}
+              {artwork.commission_note && (
+
+                <p className="mt-3 text-center text-sm text-[#766b62]">
+                  {artwork.commission_note}
+                </p>
+
+              )}
+
+
+              {/* Call artist */}
+              {artwork.artists?.phone && (
+
+                <a
+                  href={`tel:${artwork.artists.phone}`}
+                  className="mt-4 block text-center text-sm font-medium text-[#743d2c] underline"
+                >
+                  Call Artist
+                </a>
+
+              )}
+
+            </section>
+
+
+            {/* ====================================== */}
+            {/* ARTIST */}
+            {/* ====================================== */}
+
+            <section className="mt-9 border-t border-[#e7ddd2] pt-7">
+
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9a5944]">
+                The Artist
+              </p>
+
+              <p className="mt-3 font-serif text-xl">
+                {artwork.artists?.name}
+              </p>
+
+
+              {(artwork.artists?.tower ||
+                artwork.artists?.apartment) && (
+
+                <p className="mt-1 text-sm text-[#766b62]">
+
+                  {artwork.artists?.tower}
+
+                  {artwork.artists?.tower &&
+                    artwork.artists?.apartment &&
+                    ' • '}
+
+                  {artwork.artists?.apartment &&
+                    `Apartment ${artwork.artists.apartment}`}
+
+                </p>
+
+              )}
+
+            </section>
+
+
+            {/* ====================================== */}
+            {/* COMMENTS */}
+            {/* ====================================== */}
+
+            <CommentBox artworkId={artwork.id} />
+
+          </div>
+
+        </article>
+
+
+        {/* ====================================== */}
+        {/* PREVIOUS / GALLERY / NEXT */}
+        {/* ====================================== */}
+
+        <nav className="mt-6">
+
+          <div className="grid grid-cols-3 items-center gap-2">
+
+            {/* Previous */}
+            <div className="text-left">
+
+              {previousArtwork && (
+
+                <Link
+                  href={`/art/${previousArtwork.slug}`}
+                  className="text-sm font-semibold text-[#743d2c]"
+                >
+                  ← Previous
+                </Link>
+
+              )}
+
+            </div>
+
+
+            {/* Gallery */}
+            <Link
+              href="/gallery"
+              className="text-center text-sm font-medium text-[#743d2c] underline"
+            >
+              View Gallery
+            </Link>
+
+
+            {/* Next */}
+            <div className="text-right">
+
+              {nextArtwork && (
+
+                <Link
+                  href={`/art/${nextArtwork.slug}`}
+                  className="text-sm font-semibold text-[#743d2c]"
+                >
+                  Next →
+                </Link>
+
+              )}
+
+            </div>
+
+          </div>
+
+        </nav>
+
+
+        {/* Footer */}
+        <p className="mt-8 text-center text-xs tracking-[0.15em] text-[#9a8d82]">
+          PWF DURGA PUJA • ART EXHIBITION
+        </p>
 
       </div>
-
-      {/* Painting title */}
-      <h1 className="text-3xl font-bold">
-        {artwork.title}
-      </h1>
-
-      <p className="mt-2 text-lg">
-        by {artwork.artists?.name}
-      </p>
-
-      {/* Painting image */}
-      {artwork.image_url && (
-        <img
-          src={artwork.image_url}
-          alt={artwork.title}
-          className="mt-6 w-full rounded-lg"
-        />
-      )}
-
-      <p className="mt-5">
-        {artwork.medium} • {artwork.size}
-      </p>
-
-      <LikeButton
-        artworkId={artwork.id}
-        initialLikes={likeCount ?? 0}
-      />
-
-      {/* Story */}
-      <section className="mt-8">
-        <h2 className="text-xl font-semibold">
-          Story Behind the Painting
-        </h2>
-
-        <p className="mt-2">
-          {artwork.story}
-        </p>
-      </section>
-
-      {/* Buyer Experience */}
-      <section className="mt-8 rounded-xl border p-5">
-
-        <h2 className="text-xl font-semibold">
-          Artwork Availability
-        </h2>
-
-        <div className="mt-3">
-
-          {isAvailable && (
-            <span className="inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800">
-              ● Available
-            </span>
-          )}
-
-          {isSold && (
-            <span className="inline-block rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-800">
-              Sold
-            </span>
-          )}
-
-          {isNotForSale && (
-            <span className="inline-block rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
-              Not for Sale
-            </span>
-          )}
-
-        </div>
-
-        {artwork.for_sale && artwork.price && (
-          <div className="mt-4">
-            <p className="text-sm text-gray-500">
-              Price
-            </p>
-
-            <p className="text-3xl font-bold">
-              ₹{Number(artwork.price).toLocaleString('en-IN')}
-            </p>
-          </div>
-        )}
-
-        {isAvailable &&
-          artwork.for_sale &&
-          whatsappPhone && (
-            <a
-              href={`https://wa.me/${whatsappPhone}?text=${buyingMessage}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-5 block rounded-lg bg-black px-5 py-3 text-center font-semibold text-white"
-            >
-              Interested in Buying
-            </a>
-          )}
-
-        {artwork.accepts_custom_order &&
-          whatsappPhone && (
-            <a
-              href={`https://wa.me/${whatsappPhone}?text=${customOrderMessage}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 block rounded-lg border border-black px-5 py-3 text-center font-semibold"
-            >
-              🎨 Request a Custom Order
-            </a>
-          )}
-
-        {artwork.commission_note && (
-          <p className="mt-3 text-sm text-gray-600">
-            {artwork.commission_note}
-          </p>
-        )}
-
-        {artwork.artists?.phone && (
-          <a
-            href={`tel:${artwork.artists.phone}`}
-            className="mt-3 block text-center text-sm font-medium underline"
-          >
-            📞 Call Artist
-          </a>
-        )}
-
-      </section>
-
-      {/* Artist */}
-      <section className="mt-8">
-        <h2 className="text-xl font-semibold">
-          Artist
-        </h2>
-
-        <p className="mt-2 font-semibold">
-          {artwork.artists?.name}
-        </p>
-
-        <p>
-          {artwork.artists?.tower}
-          {' • '}
-          Apartment {artwork.artists?.apartment}
-        </p>
-      </section>
-
-      <CommentBox artworkId={artwork.id} />
-
-      {/* Previous / Next */}
-      <nav className="mt-10 border-t pt-6">
-
-        <div className="flex items-center justify-between gap-4">
-
-          {previousArtwork ? (
-            <Link
-              href={`/art/${previousArtwork.slug}`}
-              className="font-semibold"
-            >
-              ← Previous
-            </Link>
-          ) : (
-            <span />
-          )}
-
-          <Link
-            href="/gallery"
-            className="text-sm underline"
-          >
-            View Gallery
-          </Link>
-
-          {nextArtwork ? (
-            <Link
-              href={`/art/${nextArtwork.slug}`}
-              className="font-semibold"
-            >
-              Next →
-            </Link>
-          ) : (
-            <span />
-          )}
-
-        </div>
-
-      </nav>
 
     </main>
   )
