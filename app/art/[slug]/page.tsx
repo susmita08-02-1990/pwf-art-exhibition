@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import LikeButton from '@/components/LikeButton'
 import CommentBox from '@/components/CommentBox'
@@ -10,6 +11,7 @@ export default async function ArtworkPage({
 }) {
   const { slug } = await params
 
+  // Get artwork + artist
   const { data: artwork, error } = await supabase
     .from('artworks')
     .select(`
@@ -43,6 +45,7 @@ export default async function ArtworkPage({
     )
   }
 
+  // Get likes
   const { count: likeCount } = await supabase
     .from('likes')
     .select('*', {
@@ -51,8 +54,36 @@ export default async function ArtworkPage({
     })
     .eq('artwork_id', artwork.id)
 
-  // Clean phone number for WhatsApp
-  // Assumes Indian numbers if no country code is stored
+  // Get all artworks for browsing
+  const { data: allArtworks } = await supabase
+    .from('artworks')
+    .select('id, slug, title, display_order')
+    .order('display_order', { ascending: true })
+    .order('id', { ascending: true })
+
+  const artworks = allArtworks ?? []
+
+  const currentIndex = artworks.findIndex(
+    (item) => item.id === artwork.id
+  )
+
+  const previousArtwork =
+    currentIndex > 0
+      ? artworks[currentIndex - 1]
+      : null
+
+  const nextArtwork =
+    currentIndex >= 0 &&
+    currentIndex < artworks.length - 1
+      ? artworks[currentIndex + 1]
+      : null
+
+  const artworkNumber =
+    currentIndex >= 0 ? currentIndex + 1 : 1
+
+  const totalArtworks = artworks.length
+
+  // Phone / WhatsApp
   const rawPhone = artwork.artists?.phone || ''
   const digitsOnly = rawPhone.replace(/\D/g, '')
 
@@ -77,6 +108,22 @@ export default async function ArtworkPage({
     <main className="mx-auto max-w-xl p-6">
 
       <ViewTracker artworkId={artwork.id} />
+
+      {/* Exhibition navigation */}
+      <div className="mb-6 flex items-center justify-between">
+
+        <Link
+          href="/gallery"
+          className="text-sm font-medium underline"
+        >
+          ← Gallery
+        </Link>
+
+        <span className="text-sm text-gray-500">
+          Artwork {artworkNumber} of {totalArtworks}
+        </span>
+
+      </div>
 
       {/* Painting title */}
       <h1 className="text-3xl font-bold">
@@ -123,7 +170,6 @@ export default async function ArtworkPage({
           Artwork Availability
         </h2>
 
-        {/* Status badge */}
         <div className="mt-3">
 
           {isAvailable && (
@@ -146,7 +192,6 @@ export default async function ArtworkPage({
 
         </div>
 
-        {/* Price */}
         {artwork.for_sale && artwork.price && (
           <div className="mt-4">
             <p className="text-sm text-gray-500">
@@ -159,7 +204,6 @@ export default async function ArtworkPage({
           </div>
         )}
 
-        {/* Interested in buying */}
         {isAvailable &&
           artwork.for_sale &&
           whatsappPhone && (
@@ -173,7 +217,6 @@ export default async function ArtworkPage({
             </a>
           )}
 
-        {/* Custom order */}
         {artwork.accepts_custom_order &&
           whatsappPhone && (
             <a
@@ -192,7 +235,6 @@ export default async function ArtworkPage({
           </p>
         )}
 
-        {/* Phone */}
         {artwork.artists?.phone && (
           <a
             href={`tel:${artwork.artists.phone}`}
@@ -206,7 +248,6 @@ export default async function ArtworkPage({
 
       {/* Artist */}
       <section className="mt-8">
-
         <h2 className="text-xl font-semibold">
           Artist
         </h2>
@@ -220,10 +261,47 @@ export default async function ArtworkPage({
           {' • '}
           Apartment {artwork.artists?.apartment}
         </p>
-
       </section>
 
       <CommentBox artworkId={artwork.id} />
+
+      {/* Previous / Next */}
+      <nav className="mt-10 border-t pt-6">
+
+        <div className="flex items-center justify-between gap-4">
+
+          {previousArtwork ? (
+            <Link
+              href={`/art/${previousArtwork.slug}`}
+              className="font-semibold"
+            >
+              ← Previous
+            </Link>
+          ) : (
+            <span />
+          )}
+
+          <Link
+            href="/gallery"
+            className="text-sm underline"
+          >
+            View Gallery
+          </Link>
+
+          {nextArtwork ? (
+            <Link
+              href={`/art/${nextArtwork.slug}`}
+              className="font-semibold"
+            >
+              Next →
+            </Link>
+          ) : (
+            <span />
+          )}
+
+        </div>
+
+      </nav>
 
     </main>
   )
