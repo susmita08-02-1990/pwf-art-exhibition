@@ -31,7 +31,7 @@ export default async function GalleryPage() {
       <div className="mx-auto max-w-6xl px-4 py-7 sm:px-6 sm:py-12">
 
         {/* ====================================== */}
-        {/* EXHIBITION IDENTITY */}
+        {/* EXHIBITION HEADER */}
         {/* ====================================== */}
 
         <header className="mb-9 text-center">
@@ -44,15 +44,10 @@ export default async function GalleryPage() {
             Art Exhibition
           </h1>
 
-          {/* Divider */}
           <div className="mx-auto mt-4 flex max-w-[260px] items-center gap-3">
-
             <span className="h-px flex-1 bg-[#b98570]" />
-
             <span className="h-2 w-2 rotate-45 border border-[#9a5944]" />
-
             <span className="h-px flex-1 bg-[#b98570]" />
-
           </div>
 
           <p className="mt-4 font-serif text-xl font-medium tracking-[0.08em] text-[#8d4a36] sm:text-2xl">
@@ -68,12 +63,13 @@ export default async function GalleryPage() {
 
 
         {/* ====================================== */}
-        {/* GALLERY HEADING */}
+        {/* COLLECTION HEADING */}
         {/* ====================================== */}
 
         <div className="mb-5 flex items-end justify-between border-b border-[#d8c9b9] pb-3">
 
           <div>
+
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9a5944]">
               The Collection
             </p>
@@ -81,11 +77,14 @@ export default async function GalleryPage() {
             <h2 className="mt-1 font-serif text-2xl">
               Explore the Artworks
             </h2>
+
           </div>
 
           <p className="text-sm text-[#81766c]">
             {totalArtworks}{' '}
-            {totalArtworks === 1 ? 'Artwork' : 'Artworks'}
+            {totalArtworks === 1
+              ? 'Artwork'
+              : 'Artworks'}
           </p>
 
         </div>
@@ -110,6 +109,23 @@ export default async function GalleryPage() {
               const isNotForSale =
                 artwork.status === 'not_for_sale'
 
+
+              /*
+                Supabase may type the joined artist
+                as an array.
+
+                This safely gets the first artist
+                whether Supabase returns an array
+                or a single object.
+              */
+
+              const artist = Array.isArray(
+                artwork.artists
+              )
+                ? artwork.artists[0]
+                : artwork.artists
+
+
               return (
 
                 <Link
@@ -118,7 +134,8 @@ export default async function GalleryPage() {
                   className="group overflow-hidden rounded-xl border border-[#d8c9b9] bg-[#fffdf9] shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md"
                 >
 
-                  {/* Painting */}
+                  {/* IMAGE */}
+
                   <div className="relative bg-[#eee7dd] p-2">
 
                     {artwork.image_url ? (
@@ -138,15 +155,20 @@ export default async function GalleryPage() {
                     )}
 
 
-                    {/* Artwork number */}
+                    {/* ARTWORK NUMBER */}
+
                     <span className="absolute left-4 top-4 rounded-full bg-[#fffdf9]/95 px-3 py-1 text-xs font-semibold text-[#653426] shadow-sm">
-                      {String(index + 1).padStart(2, '0')}
+                      {String(index + 1).padStart(
+                        2,
+                        '0'
+                      )}
                     </span>
 
                   </div>
 
 
-                  {/* Artwork details */}
+                  {/* ARTWORK DETAILS */}
+
                   <div className="p-5">
 
                     <div className="flex items-start justify-between gap-3">
@@ -159,15 +181,18 @@ export default async function GalleryPage() {
 
                         <p className="mt-1 text-sm text-[#766b62]">
                           by{' '}
+
                           <span className="font-medium text-[#514840]">
-                            {artwork.artists?.name}
+                            {artist?.name}
                           </span>
+
                         </p>
 
                       </div>
 
 
-                      {/* Status */}
+                      {/* STATUS */}
+
                       <div className="shrink-0">
 
                         {isAvailable && (
@@ -193,8 +218,10 @@ export default async function GalleryPage() {
                     </div>
 
 
-                    {/* Medium / Size */}
-                    {(artwork.medium || artwork.size) && (
+                    {/* MEDIUM + SIZE */}
+
+                    {(artwork.medium ||
+                      artwork.size) && (
 
                       <p className="mt-3 text-xs tracking-wide text-[#81766c]">
 
@@ -211,7 +238,8 @@ export default async function GalleryPage() {
                     )}
 
 
-                    {/* Price */}
+                    {/* PRICE */}
+
                     {artwork.for_sale &&
                       artwork.price && (
 
@@ -221,7 +249,9 @@ export default async function GalleryPage() {
                             ₹
                             {Number(
                               artwork.price
-                            ).toLocaleString('en-IN')}
+                            ).toLocaleString(
+                              'en-IN'
+                            )}
                           </p>
 
                         </div>
@@ -233,11 +263,14 @@ export default async function GalleryPage() {
                 </Link>
 
               )
+
             })}
 
           </div>
 
         ) : (
+
+          /* EMPTY GALLERY */
 
           <div className="rounded-xl border border-[#d8c9b9] bg-[#fffdf9] px-6 py-16 text-center">
 
