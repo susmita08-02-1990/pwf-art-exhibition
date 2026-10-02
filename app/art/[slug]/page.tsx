@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import LikeButton from '@/components/LikeButton'
 import CommentBox from '@/components/CommentBox'
 import ViewTracker from '@/components/ViewTracker'
+import BuyerActions from '@/components/BuyerActions'
 
 export default async function ArtworkPage({
   params,
@@ -21,6 +22,7 @@ export default async function ArtworkPage({
         phone,
         tower,
         apartment,
+	bio,
         instagram_url,
         linkedin_url,
         photo_url
@@ -85,26 +87,6 @@ export default async function ArtworkPage({
 
   const totalArtworks = artworks.length
 
-  // Prepare phone number for WhatsApp
-  const rawPhone = artwork.artists?.phone || ''
-
-  const digitsOnly =
-    rawPhone.replace(/\D/g, '')
-
-  const whatsappPhone =
-    digitsOnly.length === 10
-      ? `91${digitsOnly}`
-      : digitsOnly
-
-  // WhatsApp messages
-  const buyingMessage = encodeURIComponent(
-    `Hi, I saw "${artwork.title}" at the PWF Art Exhibition and I am interested in buying this artwork.`
-  )
-
-  const customOrderMessage = encodeURIComponent(
-    `Hi, I saw "${artwork.title}" at the PWF Art Exhibition and would like to discuss a custom artwork.`
-  )
-
   // Artwork status
   const isAvailable =
     artwork.status === 'available'
@@ -129,17 +111,15 @@ export default async function ArtworkPage({
 
         <header className="mb-8 text-center">
 
-          {/* Community */}
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#653426] sm:text-base">
             Pashmina Waterfront
           </p>
 
-          {/* Exhibition title */}
           <h2 className="mt-3 font-serif text-3xl font-semibold tracking-wide text-[#29231f] sm:text-4xl">
             Art Exhibition
           </h2>
 
-          {/* Elegant divider */}
+          {/* Divider */}
           <div className="mx-auto mt-4 flex max-w-[260px] items-center gap-3">
 
             <span className="h-px flex-1 bg-[#b98570]" />
@@ -150,7 +130,6 @@ export default async function ArtworkPage({
 
           </div>
 
-          {/* Bengali exhibition signature */}
           <p className="mt-4 font-serif text-xl font-medium tracking-[0.08em] text-[#8d4a36] sm:text-2xl">
             শিল্প • সৃষ্টি • উৎসব
           </p>
@@ -273,7 +252,7 @@ export default async function ArtworkPage({
 
               <div className="flex items-start justify-between gap-4">
 
-                {/* Status */}
+                {/* Availability */}
                 <div>
 
                   <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#8d4a36]">
@@ -319,9 +298,7 @@ export default async function ArtworkPage({
                         ₹
                         {Number(
                           artwork.price
-                        ).toLocaleString(
-                          'en-IN'
-                        )}
+                        ).toLocaleString('en-IN')}
                       </p>
 
                     </div>
@@ -331,37 +308,20 @@ export default async function ArtworkPage({
               </div>
 
 
-              {/* Interested in buying */}
-              {isAvailable &&
-                artwork.for_sale &&
-                whatsappPhone && (
+              {/* ====================================== */}
+              {/* TRACKED BUY / CUSTOM ORDER BUTTONS */}
+              {/* ====================================== */}
 
-                  <a
-                    href={`https://wa.me/${whatsappPhone}?text=${buyingMessage}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-5 block rounded-lg bg-[#743d2c] px-5 py-3 text-center font-semibold text-white"
-                  >
-                    Interested in Buying
-                  </a>
-
-                )}
-
-
-              {/* Custom order */}
-              {artwork.accepts_custom_order &&
-                whatsappPhone && (
-
-                  <a
-                    href={`https://wa.me/${whatsappPhone}?text=${customOrderMessage}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 block rounded-lg border border-[#743d2c] px-5 py-3 text-center font-semibold text-[#743d2c]"
-                  >
-                    Request a Custom Order
-                  </a>
-
-                )}
+              <BuyerActions
+                artworkId={artwork.id}
+                artworkTitle={artwork.title}
+                phone={artwork.artists?.phone || ''}
+                forSale={artwork.for_sale}
+                isAvailable={isAvailable}
+                acceptsCustomOrder={
+                  artwork.accepts_custom_order
+                }
+              />
 
 
               {/* Commission note */}
@@ -390,7 +350,96 @@ export default async function ArtworkPage({
 
 
             {/* ====================================== */}
-            {/* ARTIST */}
+            {/* ====================================== */}
+{/* ARTIST PROFILE */}
+{/* ====================================== */}
+
+<section className="mt-9 border-t border-[#e7ddd2] pt-7">
+
+  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9a5944]">
+    The Artist
+  </p>
+
+  <div className="mt-4 flex items-start gap-4">
+
+    {/* Artist photo */}
+    {artwork.artists?.photo_url && (
+      <img
+        src={artwork.artists.photo_url}
+        alt={artwork.artists.name}
+        className="h-20 w-20 shrink-0 rounded-full object-cover"
+      />
+    )}
+
+    <div>
+
+      <p className="font-serif text-xl font-semibold">
+        {artwork.artists?.name}
+      </p>
+
+      {(artwork.artists?.tower ||
+        artwork.artists?.apartment) && (
+        <p className="mt-1 text-sm text-[#766b62]">
+
+          {artwork.artists?.tower}
+
+          {artwork.artists?.tower &&
+            artwork.artists?.apartment &&
+            ' • '}
+
+          {artwork.artists?.apartment &&
+            `Apartment ${artwork.artists.apartment}`}
+
+        </p>
+      )}
+
+    </div>
+
+  </div>
+
+
+  {/* Bio */}
+
+  {artwork.artists?.bio && (
+    <p className="mt-5 whitespace-pre-line text-[15px] leading-7 text-[#514840]">
+      {artwork.artists.bio}
+    </p>
+  )}
+
+
+  {/* Contact */}
+
+  <div className="mt-5 flex flex-wrap gap-4 text-sm font-medium text-[#743d2c]">
+
+    {artwork.artists?.phone && (
+      <a href={`tel:${artwork.artists.phone}`}>
+        ☎ Call
+      </a>
+    )}
+
+    {artwork.artists?.instagram_url && (
+      <a
+        href={artwork.artists.instagram_url}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Instagram
+      </a>
+    )}
+
+    {artwork.artists?.linkedin_url && (
+      <a
+        href={artwork.artists.linkedin_url}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        LinkedIn
+      </a>
+    )}
+
+  </div>
+
+</section>
             {/* ====================================== */}
 
             <section className="mt-9 border-t border-[#e7ddd2] pt-7">
