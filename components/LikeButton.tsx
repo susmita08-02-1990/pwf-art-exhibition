@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 type LikeButtonProps = {
@@ -15,6 +15,19 @@ export default function LikeButton({
   const [likes, setLikes] = useState(initialLikes)
   const [liked, setLiked] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [ready, setReady] = useState(false)
+
+  const storageKey = `liked-artwork-${artworkId}`
+
+  useEffect(() => {
+    const alreadyLiked = localStorage.getItem(storageKey)
+
+    if (alreadyLiked === 'true') {
+      setLiked(true)
+    }
+
+    setReady(true)
+  }, [storageKey])
 
   async function handleLike() {
     if (liked || loading) return
@@ -28,8 +41,10 @@ export default function LikeButton({
       })
 
     if (!error) {
-      setLikes(likes + 1)
+      setLikes((currentLikes) => currentLikes + 1)
       setLiked(true)
+
+      localStorage.setItem(storageKey, 'true')
     }
 
     setLoading(false)
@@ -38,8 +53,8 @@ export default function LikeButton({
   return (
     <button
       onClick={handleLike}
-      disabled={liked || loading}
-      className="mt-5 rounded-full border px-5 py-2 text-lg"
+      disabled={liked || loading || !ready}
+      className="mt-5 rounded-full border px-5 py-2 text-lg disabled:opacity-60"
     >
       {liked ? '❤️ Liked' : '♡ Like'} · {likes}
     </button>

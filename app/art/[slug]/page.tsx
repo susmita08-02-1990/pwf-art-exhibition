@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import LikeButton from '@/components/LikeButton'
 import CommentBox from '@/components/CommentBox'
+import ViewTracker from '@/components/ViewTracker'
 
 export default async function ArtworkPage({
   params,
@@ -56,6 +57,9 @@ export default async function ArtworkPage({
   return (
     <main className="mx-auto max-w-xl p-6">
 
+      {/* Automatically records one view per browser */}
+      <ViewTracker artworkId={artwork.id} />
+
       {/* Painting title */}
       <h1 className="text-3xl font-bold">
         {artwork.title}
@@ -88,7 +92,6 @@ export default async function ArtworkPage({
 
       {/* Story */}
       <section className="mt-8">
-
         <h2 className="text-xl font-semibold">
           Story Behind the Painting
         </h2>
@@ -96,12 +99,10 @@ export default async function ArtworkPage({
         <p className="mt-2">
           {artwork.story}
         </p>
-
       </section>
 
       {/* Availability */}
       <section className="mt-8">
-
         <h2 className="text-xl font-semibold">
           Availability
         </h2>
@@ -127,12 +128,10 @@ export default async function ArtworkPage({
             {artwork.commission_note}
           </p>
         )}
-
       </section>
 
       {/* Artist information */}
       <section className="mt-8">
-
         <h2 className="text-xl font-semibold">
           Artist
         </h2>
@@ -150,7 +149,6 @@ export default async function ArtworkPage({
         <p className="mt-2">
           📞 {artwork.artists?.phone}
         </p>
-
       </section>
 
       {/* Private comment box */}
