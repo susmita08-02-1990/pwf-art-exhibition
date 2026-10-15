@@ -1,9 +1,14 @@
+
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+
 import LikeButton from '@/components/LikeButton'
 import CommentBox from '@/components/CommentBox'
 import ViewTracker from '@/components/ViewTracker'
 import BuyerActions from '@/components/BuyerActions'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function ArtworkPage({
   params,
@@ -12,7 +17,7 @@ export default async function ArtworkPage({
 }) {
   const { slug } = await params
 
-  // Get artwork + artist
+  // Get artwork and its artist
   const { data: artwork, error } = await supabase
     .from('artworks')
     .select(`
@@ -22,14 +27,17 @@ export default async function ArtworkPage({
         phone,
         tower,
         apartment,
-	bio,
+        bio,
         instagram_url,
-        linkedin_url,
         photo_url
       )
     `)
     .eq('slug', slug)
     .single()
+
+  if (error) {
+    console.error('Artwork Supabase error:', error.message)
+  }
 
   if (error || !artwork) {
     return (
@@ -43,6 +51,13 @@ export default async function ArtworkPage({
             {error.message}
           </p>
         )}
+
+        <Link
+          href="/gallery"
+          className="mt-6 inline-block text-[#743d2c] underline"
+        >
+          ← Back to Gallery
+        </Link>
       </main>
     )
   }
@@ -56,7 +71,7 @@ export default async function ArtworkPage({
     })
     .eq('artwork_id', artwork.id)
 
-  // Get all artworks for exhibition navigation
+  // Get all artworks for navigation
   const { data: allArtworks } = await supabase
     .from('artworks')
     .select('id, slug, title, display_order')
@@ -81,53 +96,42 @@ export default async function ArtworkPage({
       : null
 
   const artworkNumber =
-    currentIndex >= 0
-      ? currentIndex + 1
-      : 1
+    currentIndex >= 0 ? currentIndex + 1 : 1
 
   const totalArtworks = artworks.length
 
-  // Artwork status
-  const isAvailable =
-    artwork.status === 'available'
+  // Artwork availability
+  const isAvailable = artwork.status === 'available'
+  const isSold = artwork.status === 'sold'
+  const isNotForSale = artwork.status === 'not_for_sale'
 
-  const isSold =
-    artwork.status === 'sold'
-
-  const isNotForSale =
-    artwork.status === 'not_for_sale'
+  const artist = Array.isArray(artwork.artists)
+    ? artwork.artists[0]
+    : artwork.artists
 
   return (
     <main className="min-h-screen bg-[#f5f0e8] text-[#29231f]">
 
-      {/* Track artwork view */}
+      {/* Track artwork views */}
       <ViewTracker artworkId={artwork.id} />
 
       <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-10">
 
-        {/* ====================================== */}
-        {/* EXHIBITION IDENTITY */}
-        {/* ====================================== */}
-
+        {/* EXHIBITION HEADER */}
         <header className="mb-8 text-center">
 
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#653426] sm:text-base">
             Pashmina Waterfront
           </p>
 
-          <h2 className="mt-3 font-serif text-3xl font-semibold tracking-wide text-[#29231f] sm:text-4xl">
+          <h2 className="mt-3 font-serif text-3xl font-semibold tracking-wide sm:text-4xl">
             Art Exhibition
           </h2>
 
-          {/* Divider */}
           <div className="mx-auto mt-4 flex max-w-[260px] items-center gap-3">
-
             <span className="h-px flex-1 bg-[#b98570]" />
-
             <span className="h-2 w-2 rotate-45 border border-[#9a5944]" />
-
             <span className="h-px flex-1 bg-[#b98570]" />
-
           </div>
 
           <p className="mt-4 font-serif text-xl font-medium tracking-[0.08em] text-[#8d4a36] sm:text-2xl">
@@ -136,14 +140,10 @@ export default async function ArtworkPage({
 
         </header>
 
-
-        {/* ====================================== */}
         {/* ARTWORK CARD */}
-        {/* ====================================== */}
-
         <article className="overflow-hidden rounded-2xl border border-[#d8c9b9] bg-[#fffdf9] shadow-sm">
 
-          {/* Top navigation */}
+          {/* TOP NAVIGATION */}
           <div className="flex items-center justify-between border-b border-[#e7ddd2] px-4 py-3">
 
             <Link
@@ -159,30 +159,20 @@ export default async function ArtworkPage({
 
           </div>
 
-
-          {/* ====================================== */}
           {/* PAINTING */}
-          {/* ====================================== */}
-
           {artwork.image_url && (
             <div className="bg-[#eee7dd] p-3 sm:p-5">
-
               <img
                 src={artwork.image_url}
                 alt={artwork.title}
                 className="mx-auto max-h-[75vh] w-full object-contain"
               />
-
             </div>
           )}
 
-
           <div className="px-5 py-6 sm:px-8 sm:py-8">
 
-            {/* ====================================== */}
             {/* ARTWORK INFORMATION */}
-            {/* ====================================== */}
-
             <div className="text-center">
 
               <h1 className="font-serif text-3xl leading-tight sm:text-4xl">
@@ -190,45 +180,33 @@ export default async function ArtworkPage({
               </h1>
 
               <p className="mt-2 text-base text-[#766b62]">
-
                 by{' '}
-
                 <span className="font-medium text-[#453b34]">
-                  {artwork.artists?.name}
+                  {artist?.name ?? 'Artist'}
                 </span>
-
               </p>
 
               <p className="mt-3 text-sm tracking-wide text-[#81766c]">
-
                 {artwork.medium}
 
                 {artwork.size &&
-                  `  •  ${artwork.size}`}
+                  ` • ${artwork.size}`}
 
                 {artwork.year &&
-                  `  •  ${artwork.year}`}
-
+                  ` • ${artwork.year}`}
               </p>
 
             </div>
 
-
-            {/* Like */}
+            {/* LIKE BUTTON */}
             <div className="mt-5 flex justify-center">
-
               <LikeButton
                 artworkId={artwork.id}
                 initialLikes={likeCount ?? 0}
               />
-
             </div>
 
-
-            {/* ====================================== */}
             {/* STORY */}
-            {/* ====================================== */}
-
             {artwork.story && (
               <section className="mt-9 border-t border-[#e7ddd2] pt-7">
 
@@ -243,16 +221,12 @@ export default async function ArtworkPage({
               </section>
             )}
 
-
-            {/* ====================================== */}
             {/* BUYER EXPERIENCE */}
-            {/* ====================================== */}
-
             <section className="mt-9 rounded-xl border border-[#dfd0c1] bg-[#faf6f0] p-5">
 
               <div className="flex items-start justify-between gap-4">
 
-                {/* Availability */}
+                {/* AVAILABILITY */}
                 <div>
 
                   <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#8d4a36]">
@@ -280,14 +254,11 @@ export default async function ArtworkPage({
                     )}
 
                   </div>
-
                 </div>
 
-
-                {/* Price */}
+                {/* PRICE */}
                 {artwork.for_sale &&
-                  artwork.price && (
-
+                  artwork.price != null && (
                     <div className="text-right">
 
                       <p className="text-xs text-[#81766c]">
@@ -295,222 +266,137 @@ export default async function ArtworkPage({
                       </p>
 
                       <p className="mt-1 font-serif text-2xl font-semibold text-[#653426]">
-                        ₹
-                        {Number(
-                          artwork.price
-                        ).toLocaleString('en-IN')}
+                        ₹{Number(artwork.price).toLocaleString('en-IN')}
                       </p>
 
                     </div>
-
                   )}
 
               </div>
 
-
-              {/* ====================================== */}
-              {/* TRACKED BUY / CUSTOM ORDER BUTTONS */}
-              {/* ====================================== */}
-
+              {/* BUY / CUSTOM ORDER BUTTONS */}
               <BuyerActions
                 artworkId={artwork.id}
                 artworkTitle={artwork.title}
-                phone={artwork.artists?.phone || ''}
+                phone={artist?.phone || ''}
                 forSale={artwork.for_sale}
                 isAvailable={isAvailable}
-                acceptsCustomOrder={
-                  artwork.accepts_custom_order
-                }
+                acceptsCustomOrder={artwork.accepts_custom_order}
               />
 
-
-              {/* Commission note */}
+              {/* COMMISSION NOTE */}
               {artwork.commission_note && (
-
                 <p className="mt-3 text-center text-sm text-[#766b62]">
                   {artwork.commission_note}
                 </p>
-
               )}
 
-
-              {/* Call artist */}
-              {artwork.artists?.phone && (
-
+              {/* CALL ARTIST */}
+              {artist?.phone && (
                 <a
-                  href={`tel:${artwork.artists.phone}`}
+                  href={`tel:${artist.phone}`}
                   className="mt-4 block text-center text-sm font-medium text-[#743d2c] underline"
                 >
                   Call Artist
                 </a>
-
               )}
 
             </section>
 
-
-            {/* ====================================== */}
-            {/* ====================================== */}
-{/* ARTIST PROFILE */}
-{/* ====================================== */}
-
-<section className="mt-9 border-t border-[#e7ddd2] pt-7">
-
-  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9a5944]">
-    The Artist
-  </p>
-
-  <div className="mt-4 flex items-start gap-4">
-
-    {/* Artist photo */}
-    {artwork.artists?.photo_url && (
-      <img
-        src={artwork.artists.photo_url}
-        alt={artwork.artists.name}
-        className="h-20 w-20 shrink-0 rounded-full object-cover"
-      />
-    )}
-
-    <div>
-
-      <p className="font-serif text-xl font-semibold">
-        {artwork.artists?.name}
-      </p>
-
-      {(artwork.artists?.tower ||
-        artwork.artists?.apartment) && (
-        <p className="mt-1 text-sm text-[#766b62]">
-
-          {artwork.artists?.tower}
-
-          {artwork.artists?.tower &&
-            artwork.artists?.apartment &&
-            ' • '}
-
-          {artwork.artists?.apartment &&
-            `Apartment ${artwork.artists.apartment}`}
-
-        </p>
-      )}
-
-    </div>
-
-  </div>
-
-
-  {/* Bio */}
-
-  {artwork.artists?.bio && (
-    <p className="mt-5 whitespace-pre-line text-[15px] leading-7 text-[#514840]">
-      {artwork.artists.bio}
-    </p>
-  )}
-
-
-  {/* Contact */}
-
-  <div className="mt-5 flex flex-wrap gap-4 text-sm font-medium text-[#743d2c]">
-
-    {artwork.artists?.phone && (
-      <a href={`tel:${artwork.artists.phone}`}>
-        ☎ Call
-      </a>
-    )}
-
-    {artwork.artists?.instagram_url && (
-      <a
-        href={artwork.artists.instagram_url}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Instagram
-      </a>
-    )}
-
-    {artwork.artists?.linkedin_url && (
-      <a
-        href={artwork.artists.linkedin_url}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        LinkedIn
-      </a>
-    )}
-
-  </div>
-
-</section>
-            {/* ====================================== */}
-
+            {/* ARTIST PROFILE */}
             <section className="mt-9 border-t border-[#e7ddd2] pt-7">
 
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9a5944]">
                 The Artist
               </p>
 
-              <p className="mt-3 font-serif text-xl">
-                {artwork.artists?.name}
-              </p>
+              <div className="mt-4 flex items-start gap-4">
 
+                {/* ARTIST PHOTO */}
+                {artist?.photo_url && (
+                  <img
+                    src={artist.photo_url}
+                    alt={artist.name}
+                    className="h-20 w-20 shrink-0 rounded-full object-cover"
+                  />
+                )}
 
-              {(artwork.artists?.tower ||
-                artwork.artists?.apartment) && (
+                <div>
 
-                <p className="mt-1 text-sm text-[#766b62]">
+                  <p className="font-serif text-xl font-semibold">
+                    {artist?.name}
+                  </p>
 
-                  {artwork.artists?.tower}
+                  {(artist?.tower || artist?.apartment) && (
+                    <p className="mt-1 text-sm text-[#766b62]">
 
-                  {artwork.artists?.tower &&
-                    artwork.artists?.apartment &&
-                    ' • '}
+                      {artist?.tower}
 
-                  {artwork.artists?.apartment &&
-                    `Apartment ${artwork.artists.apartment}`}
+                      {artist?.tower &&
+                        artist?.apartment &&
+                        ' • '}
 
+                      {artist?.apartment &&
+                        `Apartment ${artist.apartment}`}
+
+                    </p>
+                  )}
+
+                </div>
+              </div>
+
+              {/* BIOGRAPHY */}
+              {artist?.bio && (
+                <p className="mt-5 whitespace-pre-line text-[15px] leading-7 text-[#514840]">
+                  {artist.bio}
                 </p>
-
               )}
+
+              {/* ARTIST CONTACT */}
+              <div className="mt-5 flex flex-wrap gap-4 text-sm font-medium text-[#743d2c]">
+
+                {artist?.phone && (
+                  <a href={`tel:${artist.phone}`}>
+                    ☎ Call
+                  </a>
+                )}
+
+                {artist?.instagram_url && (
+                  <a
+                    href={artist.instagram_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Instagram
+                  </a>
+                )}
+
+              </div>
 
             </section>
 
-
-            {/* ====================================== */}
             {/* COMMENTS */}
-            {/* ====================================== */}
-
             <CommentBox artworkId={artwork.id} />
 
           </div>
-
         </article>
 
-
-        {/* ====================================== */}
-        {/* PREVIOUS / GALLERY / NEXT */}
-        {/* ====================================== */}
-
+        {/* PREVIOUS / NEXT NAVIGATION */}
         <nav className="mt-6">
 
           <div className="grid grid-cols-3 items-center gap-2">
 
-            {/* Previous */}
             <div className="text-left">
-
               {previousArtwork && (
-
                 <Link
                   href={`/art/${previousArtwork.slug}`}
                   className="text-sm font-semibold text-[#743d2c]"
                 >
                   ← Previous
                 </Link>
-
               )}
-
             </div>
 
-
-            {/* Gallery */}
             <Link
               href="/gallery"
               className="text-center text-sm font-medium text-[#743d2c] underline"
@@ -518,35 +404,27 @@ export default async function ArtworkPage({
               View Gallery
             </Link>
 
-
-            {/* Next */}
             <div className="text-right">
-
               {nextArtwork && (
-
                 <Link
                   href={`/art/${nextArtwork.slug}`}
                   className="text-sm font-semibold text-[#743d2c]"
                 >
                   Next →
                 </Link>
-
               )}
-
             </div>
 
           </div>
 
         </nav>
 
-
-        {/* Footer */}
+        {/* FOOTER */}
         <p className="mt-8 text-center text-xs tracking-[0.15em] text-[#9a8d82]">
           PWF DURGA PUJA • ART EXHIBITION
         </p>
 
       </div>
-
     </main>
   )
 }
