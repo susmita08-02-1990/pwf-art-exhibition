@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -22,15 +23,16 @@ export default function LikeButton({
   useEffect(() => {
     const alreadyLiked = localStorage.getItem(storageKey)
 
-    if (alreadyLiked === 'true') {
-      setLiked(true)
-    }
-
+    setLiked(alreadyLiked === 'true')
     setReady(true)
   }, [storageKey])
 
+  useEffect(() => {
+    setLikes(initialLikes)
+  }, [initialLikes])
+
   async function handleLike() {
-    if (liked || loading) return
+    if (liked || loading || !ready) return
 
     setLoading(true)
 
@@ -43,8 +45,9 @@ export default function LikeButton({
     if (!error) {
       setLikes((currentLikes) => currentLikes + 1)
       setLiked(true)
-
       localStorage.setItem(storageKey, 'true')
+    } else {
+      console.error('Like error:', error.message)
     }
 
     setLoading(false)
@@ -52,9 +55,10 @@ export default function LikeButton({
 
   return (
     <button
+      type="button"
       onClick={handleLike}
       disabled={liked || loading || !ready}
-      className="mt-5 rounded-full border px-5 py-2 text-lg disabled:opacity-60"
+      className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-full border border-[#d8c9b9] px-4 text-sm font-medium text-[#653426] transition hover:bg-[#f5f0e8] disabled:opacity-60"
     >
       {liked ? '❤️ Liked' : '♡ Like'} · {likes}
     </button>

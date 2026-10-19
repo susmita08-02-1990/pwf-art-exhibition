@@ -2,7 +2,9 @@
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
-// Always fetch fresh data instead of using a cached gallery page
+import LikeButton from '@/components/LikeButton'
+import GalleryCommentButton from '@/components/GalleryCommentButton'
+
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
@@ -21,7 +23,8 @@ export default async function GalleryPage() {
       price,
       display_order,
       artists (
-        name
+        name,
+        photo_url
       )
     `)
     .order('display_order', { ascending: true })
@@ -31,7 +34,30 @@ export default async function GalleryPage() {
     console.error('Gallery Supabase error:', error.message)
   }
 
-  console.log('Gallery artworks count:', artworks?.length ?? 0)
+  // Fetch like counts
+  const artworkIds = (artworks ?? []).map(
+    (artwork) => artwork.id
+  )
+
+  const { data: likes, error: likesError } = artworkIds.length
+    ? await supabase
+        .from('likes')
+        .select('artwork_id')
+        .in('artwork_id', artworkIds)
+    : { data: [], error: null }
+
+  if (likesError) {
+    console.error('Gallery likes error:', likesError.message)
+  }
+
+  const likeCounts = new Map<number, number>()
+
+  for (const like of likes ?? []) {
+    likeCounts.set(
+      like.artwork_id,
+      (likeCounts.get(like.artwork_id) ?? 0) + 1
+    )
+  }
 
   const totalArtworks = artworks?.length ?? 0
 
@@ -61,7 +87,8 @@ export default async function GalleryPage() {
 
           <p className="mx-auto mt-5 max-w-xl text-sm leading-6 text-[#766b62] sm:text-base">
             Discover the creativity of artists from our community.
-            Tap any artwork to explore its story and meet the artist.
+            Like your favourites, share your appreciation, or tap a
+            painting to explore its story.
           </p>
         </header>
 
@@ -104,50 +131,56 @@ export default async function GalleryPage() {
                 ? artwork.artists[0]
                 : artwork.artists
 
+              // Adjust Soumita's profile photo crop
+              const artistPhotoPosition =
+                artist?.name?.trim().toLowerCase() ===
+                'soumita paul'
+                  ? 'center 15%'
+                  : 'center'
+
               return (
-                <Link
+                <div
                   key={artwork.id}
-                  href={`/art/${artwork.slug}`}
-                  className="group overflow-hidden rounded-xl border border-[#d8c9b9] bg-[#fffdf9] shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md"
+                  className="group flex h-full flex-col overflow-hidden rounded-xl border border-[#d8c9b9] bg-[#fffdf9] shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md"
                 >
-                  {/* IMAGE */}
-                  <div className="relative bg-[#eee7dd] p-2">
-                    {artwork.image_url ? (
-                      <img
-                        src={artwork.image_url}
-                        alt={artwork.title}
-                        className="aspect-[4/5] w-full object-contain transition duration-300 group-hover:scale-[1.015]"
-                        loading={index < 3 ? 'eager' : 'lazy'}
-                      />
-                    ) : (
-                      <div className="flex aspect-[4/5] items-center justify-center text-sm text-[#81766c]">
-                        Artwork image
-                      </div>
-                    )}
 
-                    {/* ARTWORK NUMBER */}
-                    <span className="absolute left-4 top-4 rounded-full bg-[#fffdf9]/95 px-3 py-1 text-xs font-semibold text-[#653426] shadow-sm">
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                  </div>
+                  {/* CLICKABLE ARTWORK IMAGE */}
+                  <Link href={`/art/${artwork.slug}`}>
+                    <div className="relative overflow-hidden bg-[#eee7dd] p-2">
+                      {artwork.image_url ? (
+                        <img
+                          src={artwork.image_url}
+                          alt={artwork.title}
+                          className="aspect-[4/5] w-full object-contain transition duration-300 group-hover:scale-[1.015]"
+                          loading={index < 3 ? 'eager' : 'lazy'}
+                        />
+                      ) : (
+                        <div className="flex aspect-[4/5] items-center justify-center text-sm text-[#81766c]">
+                          Artwork image
+                        </div>
+                      )}
 
-                  {/* ARTWORK DETAILS */}
-                  <div className="p-5">
+                      {/* ARTWORK NUMBER */}
+                      <span className="absolute left-4 top-4 rounded-full bg-[#fffdf9]/95 px-3 py-1 text-xs font-semibold text-[#653426] shadow-sm">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                    </div>
+                  </Link>
+
+                  {/* CARD CONTENT */}
+                  <div className="flex flex-1 flex-col p-5">
+
+                    {/* TITLE AND STATUS */}
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-serif text-xl leading-tight text-[#29231f]">
+                      <Link
+                        href={`/art/${artwork.slug}`}
+                        className="min-w-0 hover:text-[#8d4a36]"
+                      >
+                        <h3 className="font-serif text-xl leading-tight">
                           {artwork.title}
                         </h3>
+                      </Link>
 
-                        <p className="mt-1 text-sm text-[#766b62]">
-                          by{' '}
-                          <span className="font-medium text-[#514840]">
-                            {artist?.name ?? 'Artist'}
-                          </span>
-                        </p>
-                      </div>
-
-                      {/* STATUS */}
                       <div className="shrink-0">
                         {isAvailable && (
                           <span className="rounded-full bg-[#e4eee2] px-2.5 py-1 text-xs font-semibold text-[#3f6741]">
@@ -169,9 +202,39 @@ export default async function GalleryPage() {
                       </div>
                     </div>
 
+                    {/* ARTIST PROFILE */}
+                    <div className="mt-4 flex items-center gap-3 border-t border-[#eee5db] pt-4">
+
+                      {artist?.photo_url ? (
+                        <img
+                          src={artist.photo_url}
+                          alt={artist.name ?? 'Artist'}
+                          className="h-12 w-12 shrink-0 rounded-full border-2 border-[#e4d3c5] bg-[#eee7dd] object-cover"
+                          style={{
+                            objectPosition: artistPhotoPosition,
+                          }}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#eee7dd] text-xl">
+                          🎨
+                        </div>
+                      )}
+
+                      <div className="min-w-0">
+                        <p className="text-xs uppercase tracking-wider text-[#9a8d82]">
+                          Created by
+                        </p>
+
+                        <p className="mt-0.5 text-sm font-semibold text-[#514840]">
+                          {artist?.name ?? 'Artist'}
+                        </p>
+                      </div>
+                    </div>
+
                     {/* MEDIUM AND SIZE */}
                     {(artwork.medium || artwork.size) && (
-                      <p className="mt-3 text-xs tracking-wide text-[#81766c]">
+                      <p className="mt-4 text-xs tracking-wide text-[#81766c]">
                         {artwork.medium}
                         {artwork.medium && artwork.size && ' • '}
                         {artwork.size}
@@ -187,8 +250,35 @@ export default async function GalleryPage() {
                           </p>
                         </div>
                       )}
+
+                    {/* ALIGN BUTTONS AT CARD BOTTOM */}
+                    <div className="flex-1" />
+
+                    {/* LIKE AND COMMENT */}
+                    <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[#eee5db] pt-4">
+                      <LikeButton
+                        artworkId={artwork.id}
+                        initialLikes={
+                          likeCounts.get(artwork.id) ?? 0
+                        }
+                      />
+
+                      <GalleryCommentButton
+                        artworkId={artwork.id}
+                      />
+                    </div>
+
+                    {/* VIEW DETAILS */}
+                    <Link
+                      href={`/art/${artwork.slug}`}
+                      className="mt-4 inline-flex items-center gap-1 self-start text-sm font-semibold text-[#8d4a36] hover:underline"
+                    >
+                      View artwork details
+                      <span aria-hidden="true">→</span>
+                    </Link>
+
                   </div>
-                </Link>
+                </div>
               )
             })}
           </div>
@@ -216,6 +306,7 @@ export default async function GalleryPage() {
             শিল্প • সৃষ্টি • উৎসব
           </p>
         </footer>
+
       </div>
     </main>
   )
